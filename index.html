@@ -357,7 +357,9 @@ function enterPage() {
   document.getElementById('intro').classList.add('hide');
   setTimeout(() => document.getElementById('intro').style.display = 'none', 1000);
 
-  // 等音频可以播放再播
+  // ✅ 必须先 load()，触发加载
+  bgm.load();
+
   const tryPlay = () => {
     bgm.play().then(() => {
       musicOn = true;
@@ -368,11 +370,11 @@ function enterPage() {
   };
 
   if (bgm.readyState >= 2) {
-    // 已经加载够了，直接播
     tryPlay();
   } else {
-    // 还没加载好，等一下再播
+    // ✅ 同时监听两个事件，哪个先触发用哪个
     bgm.addEventListener('canplay', tryPlay, { once: true });
+    bgm.addEventListener('canplaythrough', tryPlay, { once: true });
   }
 }
 
