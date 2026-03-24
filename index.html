@@ -354,7 +354,20 @@ function solvePuzzle(){puzzleOrder=Array.from({length:TOTAL},(_,i)=>i);puzzleSel
 function renderPuzzle(){const board=document.getElementById('puzzleBoard');board.innerHTML='';puzzleOrder.forEach((piece,pos)=>{const div=document.createElement('div');div.className='puzzle-piece'+(pos===puzzleSelected?' selected':'');div.style.cssText=`background-image:url(${PUZZLE_IMG});background-size:300% 300%;background-position:${(piece%GRID)*50}% ${Math.floor(piece/GRID)*50}%;`;div.onclick=()=>selectPiece(pos);board.appendChild(div);});document.getElementById('puzzleInfo').textContent=`移动次数：${puzzleMoves} 步`;}
 function selectPiece(pos){if(puzzleSelected===-1){puzzleSelected=pos;}else{if(puzzleSelected!==pos){[puzzleOrder[puzzleSelected],puzzleOrder[pos]]=[puzzleOrder[pos],puzzleOrder[puzzleSelected]];puzzleMoves++;}puzzleSelected=-1;renderPuzzle();checkPuzzleWin();}}
 function checkPuzzleWin(){if(puzzleOrder.every((v,i)=>v===i)&&!puzzleSolved){puzzleSolved=true;document.getElementById('puzzleWin').classList.add('show');document.getElementById('envelopeWrap').classList.remove('locked');document.getElementById('lockHint').style.display='none';document.getElementById('envHint').textContent='💛 点击打开信封';createFW();createFW();setTimeout(()=>document.getElementById('letter-section').scrollIntoView({behavior:'smooth'}),1400);}}
-window.addEventListener('load',()=>initPuzzle());
+// 预加载所有气球图片
+function preloadImages(){
+  balloonData.forEach(b=>{
+    if(b.type==='red'&&b.img){
+      const img=new Image();
+      img.src=b.img;
+    }
+  });
+}
+window.addEventListener('load',()=>{
+  initPuzzle();
+  preloadImages();
+  setTimeout(()=>startBalloonGame(),500);
+});
 
 let letterOpened=false;
 function openLetter(){const wrap=document.getElementById('envelopeWrap');if(wrap.classList.contains('locked')){wrap.style.animation='shake 0.4s ease';setTimeout(()=>wrap.style.animation='',400);return;}if(letterOpened)return;letterOpened=true;document.getElementById('flapShape').setAttribute('d','M5 30 L130 5 L255 30 Z');document.getElementById('waxSeal').setAttribute('r','0');document.getElementById('envHint').textContent='💌 已打开';setTimeout(()=>document.getElementById('letterContent').classList.add('show'),500);spawnBurst(window.innerWidth/2,window.innerHeight/2,'💌');}
