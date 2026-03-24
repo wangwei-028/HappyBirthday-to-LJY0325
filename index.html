@@ -109,7 +109,7 @@ footer .heart{font-size:2rem;animation:heartbeat 1.2s ease-in-out infinite;displ
 </div>
 <button id="musicBtn" onclick="toggleMusic()">🎵</button>
 <!-- ✅修复：preload="none" 避免阻塞 load 事件 -->
-<audio id="bgm" loop preload="none"><source src="music.mp3" type="audio/mpeg"></audio>
+<audio id="bgm" loop preload="auto"><source src="music.mp3" type="audio/mpeg"></audio>
 <div id="navDots">
   <div class="nav-dot" onclick="scrollToSection('cover')"></div>
   <div class="nav-dot" onclick="scrollToSection('timer-section')"></div>
@@ -356,13 +356,24 @@ for (let i = 0; i < particleCount; i++) {
 function enterPage() {
   document.getElementById('intro').classList.add('hide');
   setTimeout(() => document.getElementById('intro').style.display = 'none', 1000);
-  bgm.play().then(() => {
-    musicOn = true;
-    document.getElementById('musicBtn').textContent = '🎵';
-  }).catch(() => {
-    document.getElementById('musicBtn').textContent = '🔇';
-    document.getElementById('musicBtn').style.animation = 'pulse-btn 1s ease-in-out 3';
-  });
+
+  // 等音频可以播放再播
+  const tryPlay = () => {
+    bgm.play().then(() => {
+      musicOn = true;
+      document.getElementById('musicBtn').textContent = '🎵';
+    }).catch(() => {
+      document.getElementById('musicBtn').textContent = '🔇';
+    });
+  };
+
+  if (bgm.readyState >= 2) {
+    // 已经加载够了，直接播
+    tryPlay();
+  } else {
+    // 还没加载好，等一下再播
+    bgm.addEventListener('canplay', tryPlay, { once: true });
+  }
 }
 
 function toggleMusic() {
@@ -665,7 +676,7 @@ function startBalloonGame() {
       x: 50 + Math.random() * (W - 100),
       y: H + 80 + i * 70,
       r: data.type === 'pink' ? 30 : 28 + Math.random() * 8,
-      vy: -(0.45 + Math.random() * 0.55),
+      vy: -(0.8 + Math.random() * 0.8),
       vx: (Math.random() - 0.5) * 0.8,
       wobble: Math.random() * Math.PI * 2,
       wobbleSpeed: 0.022 + Math.random() * 0.02,
