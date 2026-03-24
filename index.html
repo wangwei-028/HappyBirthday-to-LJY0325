@@ -108,7 +108,6 @@ footer .heart{font-size:2rem;animation:heartbeat 1.2s ease-in-out infinite;displ
   <div class="intro-sub">✨ 点击进入 ✨</div>
 </div>
 <button id="musicBtn" onclick="toggleMusic()">🎵</button>
-<!-- ✅修复：preload="none" 避免阻塞 load 事件 -->
 <audio id="bgm" loop preload="auto"><source src="music.mp3" type="audio/mpeg"></audio>
 <div id="navDots">
   <div class="nav-dot" onclick="scrollToSection('cover')"></div>
@@ -274,29 +273,21 @@ footer .heart{font-size:2rem;animation:heartbeat 1.2s ease-in-out infinite;displ
 
 <script>
 // ====================================================
-// ✅ 修复1：所有变量声明提到最顶部，避免 const 暂时性死区
+// 基础变量
 // ====================================================
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-// ✅ 修复2：bgm 必须在 enterPage() 之前声明
 const bgm = document.getElementById('bgm');
 let musicOn = false;
 
 // ====================================================
-// 烟花系统（手机端粒子减半，频率降低）
+// 烟花系统
 // ====================================================
 const fwCanvas = document.getElementById('fireworks');
 const fwCtx = fwCanvas.getContext('2d');
-
-function resizeFW() {
-  fwCanvas.width = window.innerWidth;
-  fwCanvas.height = window.innerHeight;
-}
+function resizeFW() { fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; }
 resizeFW();
 window.addEventListener('resize', resizeFW);
-
 let fwP = [];
-// ✅ 优化：手机端粒子30个，桌面60个
 function createFW(x, y) {
   const cx = x || Math.random() * fwCanvas.width;
   const cy = y || Math.random() * fwCanvas.height * 0.5;
@@ -305,42 +296,25 @@ function createFW(x, y) {
   for (let i = 0; i < count; i++) {
     const a = (Math.PI * 2 / count) * i;
     const s = 1.5 + Math.random() * 2.5;
-    fwP.push({
-      x: cx, y: cy,
-      vx: Math.cos(a) * s,
-      vy: Math.sin(a) * s,
-      alpha: 1,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      size: 2 + Math.random() * 2
-    });
+    fwP.push({ x: cx, y: cy, vx: Math.cos(a)*s, vy: Math.sin(a)*s, alpha: 1, color: colors[Math.floor(Math.random()*colors.length)], size: 2+Math.random()*2 });
   }
 }
-
 function animFW() {
   fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
-  fwP.forEach(p => {
-    p.x += p.vx; p.y += p.vy;
-    p.vy += 0.04; p.alpha -= 0.014;
-    fwCtx.globalAlpha = Math.max(0, p.alpha);
-    fwCtx.fillStyle = p.color;
-    fwCtx.beginPath();
-    fwCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    fwCtx.fill();
-  });
+  fwP.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=0.04; p.alpha-=0.014; fwCtx.globalAlpha=Math.max(0,p.alpha); fwCtx.fillStyle=p.color; fwCtx.beginPath(); fwCtx.arc(p.x,p.y,p.size,0,Math.PI*2); fwCtx.fill(); });
   fwCtx.globalAlpha = 1;
   fwP = fwP.filter(p => p.alpha > 0);
   requestAnimationFrame(animFW);
 }
 animFW();
 createFW();
-// ✅ 优化：手机端烟花间隔6秒，桌面3.5秒
-setInterval(createFW, isMobile ? 3500 : 3500);
+setInterval(createFW, isMobile ? 6000 : 3500);
 
 // ====================================================
-// ✅ 优化：飘落粒子手机端4个，桌面7个
+// 飘落粒子
 // ====================================================
 const particleEmojis = ['🌸','✨','❤️','🎊','🎀','💛','🌹'];
-const particleCount = isMobile ? 7 : 7;
+const particleCount = isMobile ? 4 : 7;
 for (let i = 0; i < particleCount; i++) {
   const el = document.createElement('div');
   el.className = 'particle';
@@ -350,32 +324,23 @@ for (let i = 0; i < particleCount; i++) {
 }
 
 // ====================================================
-// 音乐控制
-// ✅ 修复3：enterPage 在 bgm 声明之后，不再有引用错误
+// 音乐控制（彻底重写，解决冲突）
 // ====================================================
+function tryPlayBgm() {
+  if (musicOn) return;
+  bgm.play().then(() => {
+    musicOn = true;
+    document.getElementById('musicBtn').textContent = '🎵';
+  }).catch(() => {
+    document.getElementById('musicBtn').textContent = '🔇';
+  });
+}
+
 function enterPage() {
   document.getElementById('intro').classList.add('hide');
   setTimeout(() => document.getElementById('intro').style.display = 'none', 1000);
-
-  // ✅ 必须先 load()，触发加载
-  bgm.load();
-
-  const tryPlay = () => {
-    bgm.play().then(() => {
-      musicOn = true;
-      document.getElementById('musicBtn').textContent = '🎵';
-    }).catch(() => {
-      document.getElementById('musicBtn').textContent = '🔇';
-    });
-  };
-
-  if (bgm.readyState >= 2) {
-    tryPlay();
-  } else {
-    // ✅ 同时监听两个事件，哪个先触发用哪个
-    bgm.addEventListener('canplay', tryPlay, { once: true });
-    bgm.addEventListener('canplaythrough', tryPlay, { once: true });
-  }
+  // 在用户点击的当下直接播放，成功率最高
+  tryPlayBgm();
 }
 
 function toggleMusic() {
@@ -384,41 +349,24 @@ function toggleMusic() {
     musicOn = false;
     document.getElementById('musicBtn').textContent = '🔇';
   } else {
-    bgm.play().then(() => {
-      musicOn = true;
-      document.getElementById('musicBtn').textContent = '🎵';
-    });
+    tryPlayBgm();
   }
 }
 
-// 微信浏览器专属解锁
+// 微信专属解锁
 function weixinAutoPlay() {
-  if (!musicOn) {
-    bgm.play().then(() => {
-      musicOn = true;
-      document.getElementById('musicBtn').textContent = '🎵';
-    }).catch(() => {});
-  }
+  if (!musicOn) tryPlayBgm();
 }
-// 微信 JS Bridge 准备好后播放
 if (typeof WeixinJSBridge !== 'undefined') {
-  // 已经准备好了，直接播
   WeixinJSBridge.invoke('getNetworkType', {}, weixinAutoPlay);
 } else {
-  // 还没准备好，等它准备好
   document.addEventListener('WeixinJSBridgeReady', weixinAutoPlay, { once: true });
 }
 
-// ✅ 修复4：touchstart 全局解锁，专门应对手机浏览器自动播放限制
-document.addEventListener('touchstart', function unlockAudio() {
-  if (!musicOn) {
-    bgm.play().then(() => {
-      musicOn = true;
-      document.getElementById('musicBtn').textContent = '🎵';
-    }).catch(() => {});
-  }
-  document.removeEventListener('touchstart', unlockAudio);
-}, { once: true });
+// 持续兜底：任意触摸都尝试播放，成功后自动停止
+document.addEventListener('touchstart', function () {
+  if (!musicOn) tryPlayBgm();
+}, { passive: true });
 
 // ====================================================
 // 计时器
@@ -443,21 +391,16 @@ setInterval(updateTimer, 1000);
 // 导航点
 // ====================================================
 const sections = ['cover','timer-section','cake-section','story','puzzle-section','letter-section','balloon-section','wish-section'];
-function scrollToSection(id) {
-  document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
-}
+function scrollToSection(id) { document.getElementById(id).scrollIntoView({ behavior: 'smooth' }); }
 const dots = document.querySelectorAll('.nav-dot');
 window.addEventListener('scroll', () => {
   let cur = 0;
-  sections.forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (el && el.getBoundingClientRect().top <= window.innerHeight / 2) cur = i;
-  });
+  sections.forEach((id, i) => { const el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= window.innerHeight / 2) cur = i; });
   dots.forEach((d, i) => d.classList.toggle('active', i === cur));
 });
 
 // ====================================================
-// 时间线滚动动画
+// 时间线动画
 // ====================================================
 const tlObs = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
@@ -471,29 +414,18 @@ let flamesOut = 0;
 function handleCakeClick(e) {
   const svg = e.currentTarget;
   const rect = svg.getBoundingClientRect();
-  const scaleX = 280 / rect.width;
-  const scaleY = 260 / rect.height;
-  // ✅ 兼容触摸事件
+  const scaleX = 280 / rect.width, scaleY = 260 / rect.height;
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const clientY = e.touches ? e.touches[0].clientY : e.clientY;
   const x = (clientX - rect.left) * scaleX;
   const y = (clientY - rect.top) * scaleY;
-  const candles = [
-    { id: 'flame1', cx: 106, cy: 56 },
-    { id: 'flame2', cx: 140, cy: 48 },
-    { id: 'flame3', cx: 174, cy: 56 }
-  ];
+  const candles = [{ id:'flame1',cx:106,cy:56 },{ id:'flame2',cx:140,cy:48 },{ id:'flame3',cx:174,cy:56 }];
   let hit = false;
   candles.forEach(c => {
     const dx = x - c.cx, dy = y - c.cy;
-    if (Math.sqrt(dx*dx + dy*dy) < 22) {
+    if (Math.sqrt(dx*dx+dy*dy) < 22) {
       const fl = document.getElementById(c.id);
-      if (!fl.classList.contains('out')) {
-        fl.classList.add('out');
-        flamesOut++;
-        spawnBurst(clientX, clientY, '💨');
-        hit = true;
-      }
+      if (!fl.classList.contains('out')) { fl.classList.add('out'); flamesOut++; spawnBurst(clientX, clientY, '💨'); hit = true; }
     }
   });
   if (!hit) spawnBurst(clientX, clientY, '✨');
@@ -503,11 +435,9 @@ function handleCakeClick(e) {
     createFW(); createFW();
   }
 }
-
 function spawnBurst(x, y, emoji) {
   const el = document.createElement('div');
-  el.className = 'burst';
-  el.textContent = emoji;
+  el.className = 'burst'; el.textContent = emoji;
   el.style.cssText = `left:${x}px;top:${y}px;`;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 700);
@@ -519,63 +449,42 @@ function spawnBurst(x, y, emoji) {
 const PUZZLE_IMG = 'https://i.ibb.co/wFVkZ1G0/pintu.jpg';
 let puzzleOrder = [], puzzleSelected = -1, puzzleMoves = 0, puzzleSolved = false;
 const GRID = 3, TOTAL = 9;
-
 function initPuzzle() {
   puzzleOrder = Array.from({ length: TOTAL }, (_, i) => i);
-  puzzleMoves = 0;
-  puzzleSolved = false;
+  puzzleMoves = 0; puzzleSolved = false;
   shufflePuzzle();
   document.getElementById('puzzleWin').classList.remove('show');
 }
-
 function shufflePuzzle() {
   do {
-    for (let i = TOTAL - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [puzzleOrder[i], puzzleOrder[j]] = [puzzleOrder[j], puzzleOrder[i]];
-    }
-  } while (puzzleOrder.every((v, i) => v === i));
-  puzzleSelected = -1;
-  puzzleMoves = 0;
+    for (let i = TOTAL-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [puzzleOrder[i],puzzleOrder[j]]=[puzzleOrder[j],puzzleOrder[i]]; }
+  } while (puzzleOrder.every((v,i) => v===i));
+  puzzleSelected = -1; puzzleMoves = 0;
   renderPuzzle();
   document.getElementById('puzzleWin').classList.remove('show');
 }
-
-function solvePuzzle() {
-  puzzleOrder = Array.from({ length: TOTAL }, (_, i) => i);
-  puzzleSelected = -1;
-  renderPuzzle();
-}
-
+function solvePuzzle() { puzzleOrder = Array.from({ length: TOTAL }, (_, i) => i); puzzleSelected = -1; renderPuzzle(); }
 function renderPuzzle() {
   const board = document.getElementById('puzzleBoard');
   board.innerHTML = '';
   puzzleOrder.forEach((piece, pos) => {
     const div = document.createElement('div');
     div.className = 'puzzle-piece' + (pos === puzzleSelected ? ' selected' : '');
-    div.style.cssText = `background-image:url(${PUZZLE_IMG});background-size:300% 300%;background-position:${(piece % GRID) * 50}% ${Math.floor(piece / GRID) * 50}%;`;
+    div.style.cssText = `background-image:url(${PUZZLE_IMG});background-size:300% 300%;background-position:${(piece%GRID)*50}% ${Math.floor(piece/GRID)*50}%;`;
     div.onclick = () => selectPiece(pos);
     board.appendChild(div);
   });
   document.getElementById('puzzleInfo').textContent = `移动次数：${puzzleMoves} 步`;
 }
-
 function selectPiece(pos) {
-  if (puzzleSelected === -1) {
-    puzzleSelected = pos;
-  } else {
-    if (puzzleSelected !== pos) {
-      [puzzleOrder[puzzleSelected], puzzleOrder[pos]] = [puzzleOrder[pos], puzzleOrder[puzzleSelected]];
-      puzzleMoves++;
-    }
-    puzzleSelected = -1;
-    renderPuzzle();
-    checkPuzzleWin();
+  if (puzzleSelected === -1) { puzzleSelected = pos; }
+  else {
+    if (puzzleSelected !== pos) { [puzzleOrder[puzzleSelected],puzzleOrder[pos]]=[puzzleOrder[pos],puzzleOrder[puzzleSelected]]; puzzleMoves++; }
+    puzzleSelected = -1; renderPuzzle(); checkPuzzleWin();
   }
 }
-
 function checkPuzzleWin() {
-  if (puzzleOrder.every((v, i) => v === i) && !puzzleSolved) {
+  if (puzzleOrder.every((v,i) => v===i) && !puzzleSolved) {
     puzzleSolved = true;
     document.getElementById('puzzleWin').classList.add('show');
     document.getElementById('envelopeWrap').classList.remove('locked');
@@ -592,73 +501,49 @@ function checkPuzzleWin() {
 let letterOpened = false;
 function openLetter() {
   const wrap = document.getElementById('envelopeWrap');
-  if (wrap.classList.contains('locked')) {
-    wrap.style.animation = 'shake 0.4s ease';
-    setTimeout(() => wrap.style.animation = '', 400);
-    return;
-  }
+  if (wrap.classList.contains('locked')) { wrap.style.animation = 'shake 0.4s ease'; setTimeout(() => wrap.style.animation = '', 400); return; }
   if (letterOpened) return;
   letterOpened = true;
   document.getElementById('flapShape').setAttribute('d', 'M5 30 L130 5 L255 30 Z');
   document.getElementById('waxSeal').setAttribute('r', '0');
   document.getElementById('envHint').textContent = '💌 已打开';
   setTimeout(() => document.getElementById('letterContent').classList.add('show'), 500);
-  spawnBurst(window.innerWidth / 2, window.innerHeight / 2, '💌');
+  spawnBurst(window.innerWidth/2, window.innerHeight/2, '💌');
 }
 
 // ====================================================
 // 气球数据
 // ====================================================
 const balloonData = [
-  { type: 'red', img: 'https://i.ibb.co/XrgWHvpx/10.jpg', desc: '天啊，好开心，这是真的嘛' },
-  { type: 'red', img: 'https://i.ibb.co/TfkxDFg/2.jpg', desc: '小王最喜欢的作品之一，真的绝美' },
-  { type: 'red', img: 'https://i.ibb.co/FksxQ9Mz/1.jpg', desc: '小鱼守护小王的胃，幸福' },
-  { type: 'red', img: 'https://i.ibb.co/tp9tmzZR/3.jpg', desc: '蓝天白云绿树，见证小鱼小王的爱情' },
-  { type: 'red', img: 'https://i.ibb.co/1GjKxkWD/4.jpg', desc: '小鱼说，小王拍得最好的一张。嘻嘻~' },
-  { type: 'red', img: 'https://i.ibb.co/JWkv7ZQ9/5.jpg', desc: '小鱼妹妹鼓励小王溜冰' },
-  { type: 'red', img: 'https://i.ibb.co/G3QB380m/6.jpg', desc: '谢谢你小鱼，来自三亚海边的思念' },
-  { type: 'red', img: 'https://i.ibb.co/c4tGNm5/7.jpg', desc: '小鱼说小王的笑容变得生动啦，嘻嘻嘻' },
-  { type: 'red', img: 'https://i.ibb.co/2YyhMwfP/8.jpg', desc: '小王努力拼的桌子，累但是干劲十足！小鱼妹妹要回来了~' },
-  { type: 'red', img: 'https://i.ibb.co/tMMZp5HR/11.jpg', desc: '小鱼笑得多么好看。最喜欢的一张之一' },
-  { type: 'red', img: 'https://i.ibb.co/9kVVbQZp/12.jpg', desc: '小鱼妹妹喜欢的一张，小王的眼睛也在笑' },
-  { type: 'red', img: 'https://i.ibb.co/6Rv8m20b/13.jpg', desc: '灯下的两人，好甜的背影啊' },
-  { type: 'pink', text: '愿你每天睁开眼睛\n都是好天气 ☀️' },
-  { type: 'pink', text: '愿你想吃的都好吃\n想买的都不贵 🛍️' },
-  { type: 'pink', text: '愿你走到哪里\n都被温柔对待 🌸' },
-  { type: 'pink', text: '愿你永远有人疼\n有人爱，有人陪 💕' },
-  { type: 'pink', text: '生日快乐，小鱼\n新的一岁，万事胜意 🎂' },
+  { type:'red', img:'https://i.ibb.co/XrgWHvpx/10.jpg', desc:'天啊，好开心，这是真的嘛' },
+  { type:'red', img:'https://i.ibb.co/TfkxDFg/2.jpg', desc:'小王最喜欢的作品之一，真的绝美' },
+  { type:'red', img:'https://i.ibb.co/FksxQ9Mz/1.jpg', desc:'小鱼守护小王的胃，幸福' },
+  { type:'red', img:'https://i.ibb.co/tp9tmzZR/3.jpg', desc:'蓝天白云绿树，见证小鱼小王的爱情' },
+  { type:'red', img:'https://i.ibb.co/1GjKxkWD/4.jpg', desc:'小鱼说，小王拍得最好的一张。嘻嘻~' },
+  { type:'red', img:'https://i.ibb.co/JWkv7ZQ9/5.jpg', desc:'小鱼妹妹鼓励小王溜冰' },
+  { type:'red', img:'https://i.ibb.co/G3QB380m/6.jpg', desc:'谢谢你小鱼，来自三亚海边的思念' },
+  { type:'red', img:'https://i.ibb.co/c4tGNm5/7.jpg', desc:'小鱼说小王的笑容变得生动啦，嘻嘻嘻' },
+  { type:'red', img:'https://i.ibb.co/2YyhMwfP/8.jpg', desc:'小王努力拼的桌子，累但是干劲十足！小鱼妹妹要回来了~' },
+  { type:'red', img:'https://i.ibb.co/tMMZp5HR/11.jpg', desc:'小鱼笑得多么好看。最喜欢的一张之一' },
+  { type:'red', img:'https://i.ibb.co/9kVVbQZp/12.jpg', desc:'小鱼妹妹喜欢的一张，小王的眼睛也在笑' },
+  { type:'red', img:'https://i.ibb.co/6Rv8m20b/13.jpg', desc:'灯下的两人，好甜的背影啊' },
+  { type:'pink', text:'愿你每天睁开眼睛\n都是好天气 ☀️' },
+  { type:'pink', text:'愿你想吃的都好吃\n想买的都不贵 🛍️' },
+  { type:'pink', text:'愿你走到哪里\n都被温柔对待 🌸' },
+  { type:'pink', text:'愿你永远有人疼\n有人爱，有人陪 💕' },
+  { type:'pink', text:'生日快乐，小鱼\n新的一岁，万事胜意 🎂' },
 ];
 const goldWish = '小鱼，\n谢谢你出现在我的生命里。\n\n从相识到现在，每一天都是礼物。\n\n愿我们的故事，\n还有很长很长。\n\n❤️ 生日快乐，我的小鱼。';
 
 // ====================================================
-// ✅ 优化：图片预加载（手机端懒加载，桌面端立即加载）
+// 图片预加载
 // ====================================================
 let imagesPreloaded = false;
 function preloadImages() {
   if (imagesPreloaded) return;
   imagesPreloaded = true;
-  balloonData.forEach(b => {
-    if (b.type === 'red' && b.img) {
-      const img = new Image();
-      img.src = b.img;
-    }
-  });
+  balloonData.forEach(b => { if (b.type === 'red' && b.img) { const img = new Image(); img.src = b.img; } });
 }
-
-// // 手机端：滚动到气球区域时才预加载图片
-// if (isMobile) {
-//   const balloonObs = new IntersectionObserver(entries => {
-//     if (entries[0].isIntersecting) {
-//       preloadImages();
-//       balloonObs.disconnect();
-//     }
-//   }, { threshold: 0.1 });
-//   balloonObs.observe(document.getElementById('balloon-section'));
-// } else {
-//   // 桌面端：页面加载完立即预加载
-//   window.addEventListener('load', preloadImages);
-// }
-// 页面DOM加载完就立即预加载，手机桌面都一样
 document.addEventListener('DOMContentLoaded', preloadImages);
 
 // ====================================================
@@ -667,161 +552,84 @@ document.addEventListener('DOMContentLoaded', preloadImages);
 let balloons = [], balloonAnimId = null, popCount = 0, gameStarted = false, goldAppeared = false;
 const bCanvas = document.getElementById('balloonCanvas');
 const bCtx = bCanvas.getContext('2d');
-
 function resizeBC() { bCanvas.width = bCanvas.offsetWidth; }
 resizeBC();
 window.addEventListener('resize', resizeBC);
 
 function startBalloonGame() {
-  if (balloonAnimId) {
-    cancelAnimationFrame(balloonAnimId);
-    clearTimeout(balloonAnimId);
-  }
-  balloons = [];
-  popCount = 0;
-  gameStarted = true;
-  goldAppeared = false;
+  if (balloonAnimId) { cancelAnimationFrame(balloonAnimId); clearTimeout(balloonAnimId); }
+  balloons = []; popCount = 0; gameStarted = true; goldAppeared = false;
   resizeBC();
   const W = bCanvas.width, H = bCanvas.height;
   document.getElementById('popCount').textContent = 0;
   document.getElementById('totalCount').textContent = balloonData.length + 1;
   const mixed = [...balloonData];
-  for (let i = mixed.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [mixed[i], mixed[j]] = [mixed[j], mixed[i]];
-  }
+  for (let i = mixed.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [mixed[i],mixed[j]]=[mixed[j],mixed[i]]; }
   mixed.forEach((data, i) => {
-    balloons.push({
-      ...data,
-      x: 50 + Math.random() * (W - 100),
-      y: H + 80 + i * 70,
-      r: data.type === 'pink' ? 30 : 28 + Math.random() * 8,
-      vy: -(1.2 + Math.random() * 1.2),
-      vx: (Math.random() - 0.5) * 0.8,
-      wobble: Math.random() * Math.PI * 2,
-      wobbleSpeed: 0.022 + Math.random() * 0.02,
-      popped: false,
-      popAnim: 0
-    });
+    balloons.push({ ...data, x: 50+Math.random()*(W-100), y: H+80+i*70, r: data.type==='pink'?30:28+Math.random()*8, vy: -(1.2+Math.random()*1.2), vx: (Math.random()-0.5)*0.8, wobble: Math.random()*Math.PI*2, wobbleSpeed: 0.022+Math.random()*0.02, popped: false, popAnim: 0 });
   });
   animateBalloons();
 }
 
-// ✅ 修复5：手机端气球用 setTimeout 降帧到30fps，减少GPU压力
 function animateBalloons() {
   const W = bCanvas.width, H = bCanvas.height;
   bCtx.clearRect(0, 0, W, H);
-
   const nonGold = balloons.filter(b => b.type !== 'gold');
   if (nonGold.length > 0 && nonGold.every(b => b.popped) && !goldAppeared) {
     goldAppeared = true;
-    balloons.push({
-      type: 'gold', text: goldWish,
-      x: W / 2, y: H + 80,
-      r: 44, vy: -0.5, vx: 0,
-      wobble: 0, wobbleSpeed: 0.012,
-      popped: false, popAnim: 0
-    });
+    balloons.push({ type:'gold', text:goldWish, x:W/2, y:H+80, r:44, vy:-0.5, vx:0, wobble:0, wobbleSpeed:0.012, popped:false, popAnim:0 });
   }
-
   balloons.forEach(b => {
     if (b.popped) {
       b.popAnim += 0.07;
-      if (b.popAnim < 1.2) {
-        bCtx.globalAlpha = Math.max(0, 1 - b.popAnim);
-        bCtx.font = `${b.r * (1 + b.popAnim)}px serif`;
-        bCtx.textAlign = 'center';
-        bCtx.textBaseline = 'middle';
-        bCtx.fillText('💥', b.x, b.y);
-        bCtx.globalAlpha = 1;
-      }
+      if (b.popAnim < 1.2) { bCtx.globalAlpha=Math.max(0,1-b.popAnim); bCtx.font=`${b.r*(1+b.popAnim)}px serif`; bCtx.textAlign='center'; bCtx.textBaseline='middle'; bCtx.fillText('💥',b.x,b.y); bCtx.globalAlpha=1; }
       return;
     }
     b.wobble += b.wobbleSpeed;
     const sm = b.type === 'gold' ? 1.3 : 1;
-    b.x += b.vx + Math.sin(b.wobble) * 0.5;
+    b.x += b.vx + Math.sin(b.wobble)*0.5;
     b.y += b.vy * sm;
-    if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx); }
-    if (b.x > W - b.r) { b.x = W - b.r; b.vx = -Math.abs(b.vx); }
-    if (b.y < -b.r * 2.5) { b.y = H + b.r; b.x = 50 + Math.random() * (W - 100); }
-
-    const grad = bCtx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.35, b.r * 0.05, b.x, b.y, b.r);
-    if (b.type === 'red') {
-      grad.addColorStop(0, '#ff7070');
-      grad.addColorStop(0.6, '#c0392b');
-      grad.addColorStop(1, '#7b1a1a');
-    } else if (b.type === 'pink') {
-      grad.addColorStop(0, '#ffcce8');
-      grad.addColorStop(0.6, '#ff69b4');
-      grad.addColorStop(1, '#ad1457');
-    } else {
-      grad.addColorStop(0, '#fffde7');
-      grad.addColorStop(0.5, '#f0c040');
-      grad.addColorStop(1, '#e65100');
-    }
-    bCtx.beginPath();
-    bCtx.ellipse(b.x, b.y, b.r, b.r * 1.25, 0, 0, Math.PI * 2);
-    bCtx.fillStyle = grad;
-    bCtx.fill();
-    bCtx.beginPath();
-    bCtx.ellipse(b.x - b.r * 0.28, b.y - b.r * 0.38, b.r * 0.18, b.r * 0.13, Math.PI / 4, 0, Math.PI * 2);
-    bCtx.fillStyle = 'rgba(255,255,255,0.5)';
-    bCtx.fill();
-    bCtx.beginPath();
-    bCtx.moveTo(b.x, b.y + b.r * 1.25);
-    bCtx.quadraticCurveTo(b.x + 10, b.y + b.r * 1.8, b.x, b.y + b.r * 2.5);
-    bCtx.strokeStyle = b.type === 'gold' ? '#f0c040' : b.type === 'pink' ? '#ff69b4' : '#c0392b';
-    bCtx.lineWidth = 1.5;
-    bCtx.stroke();
-    bCtx.font = `${b.r * 0.62}px serif`;
-    bCtx.textAlign = 'center';
-    bCtx.textBaseline = 'middle';
-    bCtx.fillText(b.type === 'gold' ? '🥇' : b.type === 'pink' ? '💕' : '📸', b.x, b.y);
-    if (b.type === 'gold') {
-      bCtx.beginPath();
-      bCtx.arc(b.x, b.y, b.r + 10, 0, Math.PI * 2);
-      bCtx.strokeStyle = `rgba(240,192,64,${0.25 + Math.sin(b.wobble * 3) * 0.2})`;
-      bCtx.lineWidth = 4;
-      bCtx.stroke();
-    }
+    if (b.x < b.r) { b.x=b.r; b.vx=Math.abs(b.vx); }
+    if (b.x > W-b.r) { b.x=W-b.r; b.vx=-Math.abs(b.vx); }
+    if (b.y < -b.r*2.5) { b.y=H+b.r; b.x=50+Math.random()*(W-100); }
+    const grad = bCtx.createRadialGradient(b.x-b.r*0.3, b.y-b.r*0.35, b.r*0.05, b.x, b.y, b.r);
+    if (b.type==='red') { grad.addColorStop(0,'#ff7070'); grad.addColorStop(0.6,'#c0392b'); grad.addColorStop(1,'#7b1a1a'); }
+    else if (b.type==='pink') { grad.addColorStop(0,'#ffcce8'); grad.addColorStop(0.6,'#ff69b4'); grad.addColorStop(1,'#ad1457'); }
+    else { grad.addColorStop(0,'#fffde7'); grad.addColorStop(0.5,'#f0c040'); grad.addColorStop(1,'#e65100'); }
+    bCtx.beginPath(); bCtx.ellipse(b.x,b.y,b.r,b.r*1.25,0,0,Math.PI*2); bCtx.fillStyle=grad; bCtx.fill();
+    bCtx.beginPath(); bCtx.ellipse(b.x-b.r*0.28,b.y-b.r*0.38,b.r*0.18,b.r*0.13,Math.PI/4,0,Math.PI*2); bCtx.fillStyle='rgba(255,255,255,0.5)'; bCtx.fill();
+    bCtx.beginPath(); bCtx.moveTo(b.x,b.y+b.r*1.25); bCtx.quadraticCurveTo(b.x+10,b.y+b.r*1.8,b.x,b.y+b.r*2.5);
+    bCtx.strokeStyle=b.type==='gold'?'#f0c040':b.type==='pink'?'#ff69b4':'#c0392b'; bCtx.lineWidth=1.5; bCtx.stroke();
+    bCtx.font=`${b.r*0.62}px serif`; bCtx.textAlign='center'; bCtx.textBaseline='middle';
+    bCtx.fillText(b.type==='gold'?'🥇':b.type==='pink'?'💕':'📸', b.x, b.y);
+    if (b.type==='gold') { bCtx.beginPath(); bCtx.arc(b.x,b.y,b.r+10,0,Math.PI*2); bCtx.strokeStyle=`rgba(240,192,64,${0.25+Math.sin(b.wobble*3)*0.2})`; bCtx.lineWidth=4; bCtx.stroke(); }
   });
-
-  // ✅ 手机端30fps，桌面端60fps
-  if (isMobile) {
-    balloonAnimId = setTimeout(() => requestAnimationFrame(animateBalloons), 33);
-  } else {
-    balloonAnimId = requestAnimationFrame(animateBalloons);
-  }
+  if (isMobile) { balloonAnimId = setTimeout(() => requestAnimationFrame(animateBalloons), 33); }
+  else { balloonAnimId = requestAnimationFrame(animateBalloons); }
 }
 
-// ====================================================
-// 气球点击/触摸
-// ====================================================
 function getPos(e, canvas) {
   const rect = canvas.getBoundingClientRect();
-  const sx = canvas.width / rect.width;
-  const sy = canvas.height / rect.height;
-  if (e.touches) return { x: (e.touches[0].clientX - rect.left) * sx, y: (e.touches[0].clientY - rect.top) * sy };
-  return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+  const sx = canvas.width/rect.width, sy = canvas.height/rect.height;
+  if (e.touches) return { x:(e.touches[0].clientX-rect.left)*sx, y:(e.touches[0].clientY-rect.top)*sy };
+  return { x:(e.clientX-rect.left)*sx, y:(e.clientY-rect.top)*sy };
 }
-
 function handlePop(e) {
   if (!gameStarted) return;
   e.preventDefault();
   const pos = getPos(e, bCanvas);
-  for (let i = balloons.length - 1; i >= 0; i--) {
+  for (let i = balloons.length-1; i >= 0; i--) {
     const b = balloons[i];
     if (b.popped) continue;
-    const dx = pos.x - b.x, dy = pos.y - b.y;
-    if (Math.sqrt(dx*dx + dy*dy) < b.r * 1.2) {
-      b.popped = true;
-      popCount++;
+    const dx = pos.x-b.x, dy = pos.y-b.y;
+    if (Math.sqrt(dx*dx+dy*dy) < b.r*1.2) {
+      b.popped = true; popCount++;
       document.getElementById('popCount').textContent = popCount;
       showBalloonModal(b);
-      const cx = e.touches ? e.touches[0].clientX : e.clientX;
-      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      const cx = e.touches?e.touches[0].clientX:e.clientX;
+      const cy = e.touches?e.touches[0].clientY:e.clientY;
       spawnBurst(cx, cy, '💥');
-      if (b.type === 'gold') { createFW(); createFW(); createFW(); }
+      if (b.type==='gold') { createFW(); createFW(); createFW(); }
       break;
     }
   }
@@ -832,32 +640,17 @@ bCanvas.addEventListener('touchstart', handlePop, { passive: false });
 function showBalloonModal(b) {
   const modal = document.getElementById('balloonModal');
   const img = document.getElementById('bmImg');
-  if (b.type === 'red') {
-    document.getElementById('bmTitle').textContent = '📸 我们的回忆';
-    img.src = b.img;
-    img.style.display = 'block';
-    document.getElementById('bmText').textContent = b.desc;
-  } else if (b.type === 'pink') {
-    document.getElementById('bmTitle').textContent = '💕 生日祝福';
-    img.style.display = 'none';
-    document.getElementById('bmText').textContent = b.text;
-  } else {
-    document.getElementById('bmTitle').textContent = '🥇 最后的惊喜';
-    img.style.display = 'none';
-    document.getElementById('bmText').textContent = b.text;
-  }
+  if (b.type==='red') { document.getElementById('bmTitle').textContent='📸 我们的回忆'; img.src=b.img; img.style.display='block'; document.getElementById('bmText').textContent=b.desc; }
+  else if (b.type==='pink') { document.getElementById('bmTitle').textContent='💕 生日祝福'; img.style.display='none'; document.getElementById('bmText').textContent=b.text; }
+  else { document.getElementById('bmTitle').textContent='🥇 最后的惊喜'; img.style.display='none'; document.getElementById('bmText').textContent=b.text; }
   modal.classList.add('show');
 }
 
 // ====================================================
-// ✅ 修复6：用 DOMContentLoaded 替代 load，不等 music.mp3
-// 气球自动启动，不被音乐文件阻塞
+// 页面初始化
 // ====================================================
 document.addEventListener('DOMContentLoaded', () => {
   initPuzzle();
-  // 桌面端立即预加载图片
-  if (!isMobile) preloadImages();
-  // 气球延迟500ms启动，等canvas渲染完毕
   setTimeout(() => startBalloonGame(), 500);
 });
 </script>
