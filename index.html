@@ -389,6 +389,24 @@ function toggleMusic() {
   }
 }
 
+// 微信浏览器专属解锁
+function weixinAutoPlay() {
+  if (!musicOn) {
+    bgm.play().then(() => {
+      musicOn = true;
+      document.getElementById('musicBtn').textContent = '🎵';
+    }).catch(() => {});
+  }
+}
+// 微信 JS Bridge 准备好后播放
+if (typeof WeixinJSBridge !== 'undefined') {
+  // 已经准备好了，直接播
+  WeixinJSBridge.invoke('getNetworkType', {}, weixinAutoPlay);
+} else {
+  // 还没准备好，等它准备好
+  document.addEventListener('WeixinJSBridgeReady', weixinAutoPlay, { once: true });
+}
+
 // ✅ 修复4：touchstart 全局解锁，专门应对手机浏览器自动播放限制
 document.addEventListener('touchstart', function unlockAudio() {
   if (!musicOn) {
