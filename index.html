@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>生日快乐，小鱼 🎂</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--red:#c0392b;--dark-red:#922b21;--gold:#f0c040;--light-gold:#fdeaa7;--bg:#1a0a0a;}
+body{background:var(--bg);color:#fff;font-family:'楷体',Georgia,serif;overflow-x:hidden;}
+#fireworks{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+#intro{position:fixed;inset:0;background:#1a0a0a;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:opacity 1s;}
+#intro.hide{opacity:0;pointer-events:none;}
+.intro-emoji{font-size:4rem;margin-bottom:20px;animation:float 2.5s ease-in-out infinite;}
+.intro-title{font-size:clamp(1.8rem,8vw,3rem);color:var(--gold);text-shadow:0 0 30px rgba(240,192,64,0.8);animation:pulse 2s infinite;}
+.intro-sub{color:#ccc;margin-top:20px;font-size:1rem;animation:bounce2 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+@keyframes bounce2{0%,100%{transform:translateY(0);}50%{transform:translateY(7px);}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+#musicBtn{position:fixed;top:14px;right:14px;z-index:150;background:rgba(240,192,64,0.15);border:1px solid var(--gold);border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#navDots{position:fixed;right:8px;top:50%;transform:translateY(-50%);z-index:100;display:flex;flex-direction:column;gap:8px;}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:rgba(240,192,64,0.3);cursor:pointer;transition:background 0.3s;}
+.nav-dot.active{background:var(--gold);}
+#cover{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;z-index:1;}
+.cover-deco{font-size:3.5rem;animation:float 3s ease-in-out infinite;}
+.cover-title{font-size:clamp(2.5rem,11vw,4.5rem);color:var(--gold);text-shadow:0 0 20px rgba(240,192,64,0.8);line-height:1.3;margin:10px 0;}
+.cover-name{font-size:clamp(1.4rem,7vw,2.5rem);color:#fff;letter-spacing:6px;margin-bottom:20px;}
+.cover-date{background:rgba(192,57,43,0.3);border:1px solid var(--gold);border-radius:30px;padding:8px 24px;color:var(--light-gold);font-size:0.95rem;margin-bottom:30px;}
+.scroll-hint{color:var(--gold);font-size:0.9rem;opacity:0.7;animation:bounce2 1.5s infinite;}
+#timer-section{position:relative;z-index:1;padding:50px 20px;max-width:600px;margin:0 auto;text-align:center;}
+.section-title{font-size:clamp(1.3rem,6vw,1.9rem);color:var(--gold);text-align:center;margin-bottom:28px;text-shadow:0 0 10px rgba(240,192,64,0.4);}
+.timer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:400px;margin:0 auto;}
+.timer-box{background:linear-gradient(135deg,rgba(192,57,43,0.4),rgba(146,43,33,0.2));border:1px solid rgba(240,192,64,0.5);border-radius:12px;padding:14px 6px;}
+.timer-num{font-size:clamp(1.6rem,7vw,2.4rem);color:var(--gold);font-weight:bold;display:block;}
+.timer-label{font-size:0.7rem;color:#ccc;margin-top:4px;}
+.divider{text-align:center;color:var(--gold);font-size:1.1rem;letter-spacing:6px;padding:8px 0;opacity:0.5;z-index:1;position:relative;}
+section{position:relative;z-index:1;padding:50px 20px;max-width:600px;margin:0 auto;}
+.timeline{position:relative;padding-left:32px;}
+.timeline::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--gold),var(--red));}
+.tl-item{position:relative;margin-bottom:36px;opacity:0;transform:translateX(30px);transition:all 0.6s ease;}
+.tl-item.visible{opacity:1;transform:translateX(0);}
+.tl-dot{position:absolute;left:-25px;top:5px;width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold);}
+.tl-date{font-size:0.82rem;color:var(--gold);margin-bottom:3px;}
+.tl-title{font-size:1.15rem;color:#fff;margin-bottom:4px;}
+.tl-desc{font-size:0.88rem;color:#ccc;line-height:1.7;}
+.tl-future .tl-dot{background:transparent;border:2px dashed var(--gold);box-shadow:none;}
+.tl-future .tl-date{color:rgba(240,192,64,0.6);}
+.tl-future .tl-title{color:rgba(255,255,255,0.7);}
+.tl-future .tl-desc{color:rgba(204,204,204,0.6);}
+#cake-section{position:relative;z-index:1;padding:50px 20px;max-width:600px;margin:0 auto;text-align:center;}
+.cake-svg{width:min(280px,70vw);cursor:pointer;}
+.candle-flame{transition:opacity 0.3s;}
+.candle-flame.out{opacity:0;}
+.blow-hint{color:var(--light-gold);font-size:0.9rem;margin-top:12px;opacity:0.8;}
+.wish-popup{display:none;margin-top:20px;background:linear-gradient(135deg,rgba(192,57,43,0.4),rgba(146,43,33,0.2));border:1px solid var(--gold);border-radius:16px;padding:24px;color:var(--light-gold);font-size:1rem;line-height:2;animation:fadeIn 0.8s ease;}
+.wish-popup.show{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+#puzzle-section{position:relative;z-index:1;padding:50px 20px;max-width:600px;margin:0 auto;text-align:center;}
+#puzzleBoard{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;max-width:min(320px,85vw);margin:0 auto;border:2px solid rgba(240,192,64,0.4);border-radius:10px;overflow:hidden;}
+.puzzle-piece{aspect-ratio:1;cursor:pointer;transition:transform 0.1s;border:1px solid rgba(240,192,64,0.15);}
+.puzzle-piece:active{transform:scale(0.96);}
+.puzzle-piece.selected{outline:3px solid var(--gold);z-index:2;}
+.puzzle-info{color:#ccc;font-size:0.85rem;margin-top:10px;}
+.puzzle-win{display:none;color:var(--gold);font-size:1.1rem;margin-top:14px;animation:fadeIn 0.6s ease;}
+.puzzle-win.show{display:block;}
+.puzzle-btns{display:flex;gap:10px;justify-content:center;margin-top:12px;}
+.puzzle-btns button{background:rgba(192,57,43,0.4);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:8px 20px;font-size:0.9rem;cursor:pointer;font-family:inherit;}
+#letter-section{position:relative;z-index:1;padding:50px 20px;max-width:600px;margin:0 auto;text-align:center;}
+.letter-lock-hint{background:rgba(240,192,64,0.08);border:1px dashed rgba(240,192,64,0.5);border-radius:12px;padding:12px 20px;color:var(--light-gold);font-size:0.88rem;margin-bottom:20px;line-height:1.7;}
+.envelope-wrap{display:inline-block;cursor:pointer;position:relative;}
+.envelope-wrap.locked{opacity:0.45;cursor:not-allowed;}
+.envelope{width:min(260px,65vw);}
+.envelope-hint{color:var(--light-gold);font-size:0.9rem;margin-top:10px;opacity:0.8;}
+.letter-content{display:none;margin-top:24px;background:linear-gradient(135deg,rgba(255,245,220,0.06),rgba(192,57,43,0.1));border:1px solid rgba(240,192,64,0.4);border-radius:16px;padding:28px 22px;text-align:left;line-height:2.2;font-size:clamp(0.92rem,3.8vw,1.05rem);color:#f5e6c8;animation:fadeIn 0.8s ease;}
+.letter-content.show{display:block;}
+.letter-content .gold{color:var(--gold);}
+.letter-sig{text-align:right;margin-top:20px;color:var(--gold);}
+#balloon-section{position:relative;z-index:1;padding:50px 20px;max-width:600px;margin:0 auto;}
+#balloonCanvas{display:block;width:100%;border-radius:14px;border:2px solid rgba(240,192,64,0.3);background:linear-gradient(180deg,#0d0005 0%,#1a0a0a 100%);touch-action:none;cursor:crosshair;}
+.balloon-score{text-align:center;color:var(--gold);font-size:0.95rem;margin-top:10px;}
+.balloon-btns{display:flex;gap:10px;justify-content:center;margin-top:12px;}
+.balloon-btns button{background:rgba(192,57,43,0.5);border:1px solid var(--gold);color:#fff;border-radius:30px;padding:11px 28px;font-size:0.95rem;cursor:pointer;font-family:inherit;}
+#balloonModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:300;align-items:center;justify-content:center;flex-direction:column;padding:24px;}
+#balloonModal.show{display:flex;}
+#balloonModal img{max-width:90vw;max-height:50vh;border-radius:12px;border:2px solid var(--gold);object-fit:contain;margin-bottom:16px;}
+#balloonModal .bm-title{color:var(--gold);font-size:1.3rem;margin-bottom:12px;text-align:center;}
+#balloonModal .bm-text{color:var(--light-gold);font-size:1rem;text-align:center;line-height:1.9;max-width:340px;white-space:pre-line;}
+#balloonModal .bm-close{margin-top:22px;background:var(--red);color:#fff;border:none;border-radius:30px;padding:11px 34px;font-size:1rem;cursor:pointer;font-family:inherit;}
+.wish-card{background:linear-gradient(135deg,rgba(192,57,43,0.3),rgba(146,43,33,0.2));border:1px solid rgba(240,192,64,0.4);border-radius:16px;padding:30px 24px;text-align:center;line-height:2.1;font-size:clamp(0.95rem,4vw,1.15rem);color:#f5e6c8;position:relative;overflow:hidden;}
+.wish-card::before{content:'❝';position:absolute;top:8px;left:14px;font-size:3rem;color:rgba(240,192,64,0.12);}
+.wish-card .highlight{color:var(--gold);}
+footer{position:relative;z-index:1;text-align:center;padding:40px 20px 60px;color:rgba(240,192,64,0.6);font-size:0.9rem;}
+footer .heart{font-size:2rem;animation:heartbeat 1.2s ease-in-out infinite;display:block;margin-bottom:10px;}
+@keyframes heartbeat{0%,100%{transform:scale(1);}50%{transform:scale(1.2);}}
+.particle{position:fixed;pointer-events:none;z-index:0;animation:fall linear infinite;opacity:0.5;}
+@keyframes fall{0%{transform:translateY(-20px) rotate(0deg);opacity:0.7;}100%{transform:translateY(110vh) rotate(360deg);opacity:0;}}
+.burst{position:fixed;pointer-events:none;z-index:50;font-size:1.4rem;animation:burst-anim 0.7s ease-out forwards;}
+@keyframes burst-anim{0%{opacity:1;transform:scale(0.5);}100%{opacity:0;transform:scale(2.2) translateY(-28px);}}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+</style>
+</head>
+<body>
+<canvas id="fireworks"></canvas>
+<div id="intro" onclick="enterPage()">
+  <div class="intro-emoji">🎂</div>
+  <div class="intro-title">有一份惊喜等着你</div>
+  <div class="intro-sub">✨ 点击进入 ✨</div>
+</div>
+<button id="musicBtn" onclick="toggleMusic()">🎵</button>
+<audio id="bgm" loop><source src="music.mp3" type="audio/mpeg"></audio>
+<div id="navDots">
+  <div class="nav-dot" onclick="scrollToSection('cover')"></div>
+  <div class="nav-dot" onclick="scrollToSection('timer-section')"></div>
+  <div class="nav-dot" onclick="scrollToSection('cake-section')"></div>
+  <div class="nav-dot" onclick="scrollToSection('story')"></div>
+  <div class="nav-dot" onclick="scrollToSection('puzzle-section')"></div>
+  <div class="nav-dot" onclick="scrollToSection('letter-section')"></div>
+  <div class="nav-dot" onclick="scrollToSection('balloon-section')"></div>
+  <div class="nav-dot" onclick="scrollToSection('wish-section')"></div>
+</div>
+
+<div id="cover">
+  <div class="cover-deco">🎂</div>
+  <div class="cover-title">生日快乐</div>
+  <div class="cover-name">李 京 谕</div>
+  <div class="cover-date">🎉 2026年 · 小鱼的生日</div>
+  <div class="scroll-hint">↓ 向下滑动 ↓</div>
+</div>
+<div class="divider">✦ ✦ ✦</div>
+
+<div id="timer-section">
+  <div class="section-title">⏱️ 我们在一起</div>
+  <div class="timer-grid">
+    <div class="timer-box"><span class="timer-num" id="t-days">0</span><div class="timer-label">天</div></div>
+    <div class="timer-box"><span class="timer-num" id="t-hours">0</span><div class="timer-label">小时</div></div>
+    <div class="timer-box"><span class="timer-num" id="t-mins">0</span><div class="timer-label">分钟</div></div>
+    <div class="timer-box"><span class="timer-num" id="t-secs">0</span><div class="timer-label">秒</div></div>
+  </div>
+  <p style="color:#aaa;font-size:0.8rem;margin-top:14px;text-align:center;">从 2025.10.28 相识至今</p>
+</div>
+<div class="divider">✦ ✦ ✦</div>
+
+<div id="cake-section">
+  <div class="section-title">🎂 许个愿吧</div>
+  <p style="color:#aaa;font-size:0.85rem;margin-bottom:20px;">点击蜡烛，逐一吹灭，许个愿望</p>
+  <svg class="cake-svg" viewBox="0 0 280 260" xmlns="http://www.w3.org/2000/svg" onclick="handleCakeClick(event)">
+    <ellipse cx="140" cy="210" rx="110" ry="22" fill="#8B1A1A"/>
+    <rect x="30" y="175" width="220" height="38" rx="8" fill="#c0392b"/>
+    <ellipse cx="140" cy="175" rx="110" ry="20" fill="#e74c3c"/>
+    <ellipse cx="140" cy="165" rx="90" ry="17" fill="#922b21"/>
+    <rect x="50" y="132" width="180" height="36" rx="8" fill="#c0392b"/>
+    <ellipse cx="140" cy="132" rx="90" ry="17" fill="#e74c3c"/>
+    <ellipse cx="140" cy="122" rx="70" ry="14" fill="#8B1A1A"/>
+    <rect x="70" y="92" width="140" height="33" rx="8" fill="#c0392b"/>
+    <ellipse cx="140" cy="92" rx="70" ry="14" fill="#e74c3c"/>
+    <path d="M70 92 Q85 78 100 92 Q115 78 130 92 Q145 78 160 92 Q175 78 190 92 Q205 78 210 92" fill="none" stroke="#fdeaa7" stroke-width="5" stroke-linecap="round"/>
+    <path d="M30 175 Q50 160 70 175 Q90 160 110 175 Q130 160 150 175 Q170 160 190 175 Q210 160 230 175 Q250 160 250 175" fill="none" stroke="#fdeaa7" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="100" cy="155" r="4" fill="#f0c040"/><circle cx="140" cy="158" r="4" fill="#f0c040"/><circle cx="180" cy="155" r="4" fill="#f0c040"/>
+    <circle cx="80" cy="108" r="3" fill="#f0c040"/><circle cx="140" cy="110" r="3" fill="#f0c040"/><circle cx="200" cy="108" r="3" fill="#f0c040"/>
+    <rect x="100" y="62" width="12" height="32" rx="4" fill="#f0c040"/>
+    <rect x="134" y="55" width="12" height="38" rx="4" fill="#e74c3c"/>
+    <rect x="168" y="62" width="12" height="32" rx="4" fill="#f0c040"/>
+    <g id="flame1" class="candle-flame"><ellipse cx="106" cy="56" rx="5" ry="8" fill="#ffd700" opacity="0.9"/><ellipse cx="106" cy="58" rx="3" ry="5" fill="#ff6600"/><ellipse cx="106" cy="60" rx="1.5" ry="3" fill="#fff"/></g>
+    <g id="flame2" class="candle-flame"><ellipse cx="140" cy="48" rx="5" ry="8" fill="#ffd700" opacity="0.9"/><ellipse cx="140" cy="50" rx="3" ry="5" fill="#ff6600"/><ellipse cx="140" cy="52" rx="1.5" ry="3" fill="#fff"/></g>
+    <g id="flame3" class="candle-flame"><ellipse cx="174" cy="56" rx="5" ry="8" fill="#ffd700" opacity="0.9"/><ellipse cx="174" cy="58" rx="3" ry="5" fill="#ff6600"/><ellipse cx="174" cy="60" rx="1.5" ry="3" fill="#fff"/></g>
+    <text x="140" y="200" text-anchor="middle" fill="#fdeaa7" font-size="13" font-family="楷体,serif">生日快乐</text>
+  </svg>
+  <div class="blow-hint" id="blowHint">👆 点击蜡烛逐一吹灭</div>
+  <div class="wish-popup" id="wishPopup">
+    <p>🎉 愿望已送达！</p><br>
+    <p>愿小鱼在新的一岁里，</p>
+    <p>事事顺心，天天开心，</p>
+    <p>被这个世界温柔以待。</p><br>
+    <p style="color:var(--gold)">我在这里，陪着你。❤️</p>
+  </div>
+</div>
+<div class="divider">✦ ✦ ✦</div>
+
+<section id="story">
+  <div class="section-title">🗺️ 我们走过的地方</div>
+  <div class="timeline">
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">2025 · 10.28</div><div class="tl-title">✨ 相识</div><div class="tl-desc">一切故事的起点，从这一天开始，你走进了我的世界。</div></div>
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">2025 · 11.8</div><div class="tl-title">🐚 珊瑚博物馆</div><div class="tl-desc">一起在珊瑚的世界里漫步，体验珊瑚的缤纷多彩。</div></div>
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">2025 · 12.5</div><div class="tl-title">🌿 松山湖绿道漫步</div><div class="tl-desc">夜晚静谧湖边漫步，灯光下的背影。下起了小雨，雨中小屋里的相拥。</div></div>
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">2025 · 12.6</div><div class="tl-title">🌊 马峦山瀑布</div><div class="tl-desc">我们爬过的第一座山，看到了壮观的瀑布。</div></div>
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">2025 · 12.14</div><div class="tl-title">⛺ 植物园露营</div><div class="tl-desc">草坪上的帐篷，帐篷中的相拥，草坪上的嬉戏。</div></div>
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">2025.12.31 — 2026.1.2</div><div class="tl-title">🌊 三亚相约</div><div class="tl-desc">走在傍晚的海边，吹着海风，格外惬意。摩天轮上的美好愿望，一定会实现。</div></div>
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">2026 · 1.24</div><div class="tl-title">🏔️ 万绿湖徒步登山</div><div class="tl-desc">山路有点陡，但你一直走在前面，回头等我，那个背影很好看。</div></div>
+    <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">2026 · 3.14</div><div class="tl-title">🏙️ 香港之旅</div><div class="tl-desc">维多利亚港的景色，便宜的天文博物馆，精致的商场和拥挤的街道。我们在这里。</div></div>
+    <div class="tl-item tl-future"><div class="tl-dot"></div><div class="tl-date">未来 · 期待中 🌟</div><div class="tl-title">🦁 野生动物园</div><div class="tl-desc">一起去看狮子老虎，给小鹿喂食，看猴子嬉戏。感受生命的神奇。</div></div>
+    <div class="tl-item tl-future"><div class="tl-dot"></div><div class="tl-date">未来 · 期待中 🌟</div><div class="tl-title">🍵 一起去广州</div><div class="tl-desc">在茶楼喝早茶，逛云山珠水，看烟火人间。</div></div>
+    <div class="tl-item tl-future"><div class="tl-dot"></div><div class="tl-date">未来 · 期待中 🌟</div><div class="tl-title">🌸 一起去大理</div><div class="tl-desc">苍山洱海，风花雪月，和你一起去看。</div></div>
+  </div>
+</section>
+<div class="divider">✦ ✦ ✦</div>
+
+<div id="puzzle-section">
+  <div class="section-title">💘 爱心拼图</div>
+  <p style="color:#aaa;font-size:0.82rem;text-align:center;margin-bottom:18px;">完成拼图，解锁一封信 💌</p>
+  <div id="puzzleBoard"></div>
+  <div class="puzzle-info" id="puzzleInfo"></div>
+  <div class="puzzle-win" id="puzzleWin">🎉 拼图完成！信封已解锁，快去看看吧 💌</div>
+  <div class="puzzle-btns">
+    <button onclick="shufflePuzzle()">🔀 重新打乱</button>
+    <button onclick="solvePuzzle()">👁️ 查看原图</button>
+  </div>
+</div>
+<div class="divider">✦ ✦ ✦</div>
+
+<div id="letter-section">
+  <div class="section-title">💌 有封信给你</div>
+  <div class="letter-lock-hint" id="lockHint">🔒 完成上方的爱心拼图，才能打开这封信哦</div>
+  <div class="envelope-wrap locked" id="envelopeWrap" onclick="openLetter()">
+    <svg class="envelope" viewBox="0 0 260 180" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="30" width="250" height="145" rx="10" fill="#8B1A1A"/>
+      <rect x="5" y="30" width="250" height="145" rx="10" fill="none" stroke="#f0c040" stroke-width="2"/>
+      <path id="flapShape" d="M5 30 L130 105 L255 30 Z" fill="#c0392b"/>
+      <path d="M5 30 L130 105 L255 30" fill="none" stroke="#f0c040" stroke-width="1.5"/>
+      <path d="M5 175 L90 100 M255 175 L170 100" fill="none" stroke="#f0c040" stroke-width="1" opacity="0.5"/>
+      <circle cx="130" cy="90" r="18" fill="#f0c040" id="waxSeal"/>
+      <text x="130" y="95" text-anchor="middle" fill="#8B1A1A" font-size="14">❤</text>
+    </svg>
+    <div class="envelope-hint" id="envHint">🔒 拼图完成后解锁</div>
+  </div>
+  <div class="letter-content" id="letterContent">
+    <p>亲爱的小鱼，</p><br>
+    <p>今天是你的生日，祝你生日快乐。</p><br>
+    <p>写这封信的时候，我百感交集，想了很久，不知道从哪里说起。</p><br>
+    <p>还记得刚认识你的时候，我唯唯诺诺，不善言辞；而你，是一个那么有活力的阳光女孩，活泼而善良。从相识到相爱，一开始让我觉得有些恍惚——这么可爱的女生走进了我的世界，并愿意陪在我身边。那段时间我一度小心翼翼，生怕这个梦就此破碎。</p><br>
+    <p>由于缺乏经验和直男思维，我没能抓住一些重要的东西，也因此伤害了你，这让我很懊悔。我们的感情一路几经波折，酸甜苦辣共同渲染了我们的故事。但每一次的磕磕绊绊，都让我重新审视自己，也让我知道，你对我来说是不一样的。我相信，以后会有更多甜，更少苦。我现在这么相信着，也愿意为此努力。</p><br>
+    <p>当我整理相册时，看到了许多甜蜜的回忆。我一度以为自己是个没什么情绪的人，但我发现并不是——只是之前一直没遇到值得我珍惜的人和事。看着那些记录，脑海里浮现出一幅幅画面，那些因彼此而生出欢笑的温馨时光。我不禁潸然泪下：我一直那么爱你，为什么还会做出伤害你、伤害感情的事？我几经懊悔，但也在此刻确认了初心——我想拿出更好的自己，让我们未来的故事更加美满。</p><br>
+    <p>2026年的这个生日，有了我的参与，我很开心。能走进你的生活，是我的幸运。往后的日子，我想继续出现在你每一个重要的时刻。我们一起去野生动物园、去广州喝早茶、去大理赏风光，以及去所有我们还没去过的地方。</p><br>
+    <p>每一个地方，每一段时光，都因为有你，变得不一样。</p><br>
+    <p>祝你生日快乐，小鱼。愿你天天开心，岁岁平安，被爱包围，被温柔对待。</p><br>
+    <div class="letter-sig">爱你的小王 留 ❤️</div>
+  </div>
+</div>
+<div class="divider">✦ ✦ ✦</div>
+
+<div id="balloon-section">
+  <div class="section-title">🎈 戳破气球，发现惊喜</div>
+  <canvas id="balloonCanvas" height="500"></canvas>
+  <div class="balloon-score">💥 已戳破：<span id="popCount">0</span> / <span id="totalCount">0</span></div>
+  <div class="balloon-btns"><button onclick="startBalloonGame()">🎈 开始 / 重新开始</button></div>
+</div>
+<div class="divider">✦ ✦ ✦</div>
+
+<section id="wish-section">
+  <div class="section-title">💌 想对你说</div>
+  <div class="wish-card">
+    <p>祝你生日快乐，<span class="highlight">小鱼</span>，</p>
+    <p>愿你天天开心，岁岁平安。</p><br>
+    <p>2026年的这个生日，</p>
+    <p>有了我的参与，我很开心，</p>
+    <p>能走进你的生活，是我的幸运。</p><br>
+    <p>往后的日子，每一步都有彼此。</p>
+    <p style="color:var(--gold);margin-top:10px;">❤️ 生日快乐，小鱼。</p>
+  </div>
+</section>
+
+<footer>
+  <span class="heart">❤️</span>
+  写给小鱼的生日礼物 · 2026
+</footer>
+
+<div id="balloonModal">
+  <div class="bm-title" id="bmTitle"></div>
+  <img id="bmImg" src="" alt="" style="display:none">
+  <div class="bm-text" id="bmText"></div>
+  <button class="bm-close" onclick="document.getElementById('balloonModal').classList.remove('show')">继续 🎈</button>
+</div>
+
+<script>
+const fwCanvas=document.getElementById('fireworks'),fwCtx=fwCanvas.getContext('2d');
+function resizeFW(){fwCanvas.width=window.innerWidth;fwCanvas.height=window.innerHeight;}
+resizeFW();window.addEventListener('resize',resizeFW);
+let fwP=[];
+function createFW(x,y){const cx=x||Math.random()*fwCanvas.width,cy=y||Math.random()*fwCanvas.height*0.5,colors=['#f0c040','#c0392b','#fff','#fdeaa7','#e74c3c','#ff69b4'];for(let i=0;i<60;i++){const a=(Math.PI*2/60)*i,s=1.5+Math.random()*2.5;fwP.push({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s,alpha:1,color:colors[Math.floor(Math.random()*colors.length)],size:2+Math.random()*2});}}
+function animFW(){fwCtx.clearRect(0,0,fwCanvas.width,fwCanvas.height);fwP.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.04;p.alpha-=0.014;fwCtx.globalAlpha=Math.max(0,p.alpha);fwCtx.fillStyle=p.color;fwCtx.beginPath();fwCtx.arc(p.x,p.y,p.size,0,Math.PI*2);fwCtx.fill();});fwCtx.globalAlpha=1;fwP=fwP.filter(p=>p.alpha>0);requestAnimationFrame(animFW);}
+animFW();createFW();setInterval(createFW,3500);
+
+['🌸','✨','❤️','🎊','🎀','💛','🌹'].forEach(em=>{const el=document.createElement('div');el.className='particle';el.textContent=em;el.style.cssText=`left:${Math.random()*100}vw;font-size:${0.7+Math.random()*0.8}rem;animation-duration:${7+Math.random()*8}s;animation-delay:${Math.random()*8}s;`;document.body.appendChild(el);});
+
+function enterPage(){document.getElementById('intro').classList.add('hide');setTimeout(()=>document.getElementById('intro').style.display='none',1000);tryPlayMusic();}
+const bgm=document.getElementById('bgm');let musicOn=false;
+function tryPlayMusic(){bgm.play().then(()=>{musicOn=true;}).catch(()=>{});}
+function toggleMusic(){if(musicOn){bgm.pause();musicOn=false;document.getElementById('musicBtn').textContent='🔇';}else{bgm.play();musicOn=true;document.getElementById('musicBtn').textContent='🎵';}}
+
+function updateTimer(){const start=new Date('2025-10-28T00:00:00'),now=new Date();let diff=Math.floor((now-start)/1000);const days=Math.floor(diff/86400);diff%=86400;const hours=Math.floor(diff/3600);diff%=3600;const mins=Math.floor(diff/60),secs=diff%60;document.getElementById('t-days').textContent=days;document.getElementById('t-hours').textContent=String(hours).padStart(2,'0');document.getElementById('t-mins').textContent=String(mins).padStart(2,'0');document.getElementById('t-secs').textContent=String(secs).padStart(2,'0');}
+updateTimer();setInterval(updateTimer,1000);
+
+const sections=['cover','timer-section','cake-section','story','puzzle-section','letter-section','balloon-section','wish-section'];
+function scrollToSection(id){document.getElementById(id).scrollIntoView({behavior:'smooth'});}
+const dots=document.querySelectorAll('.nav-dot');
+window.addEventListener('scroll',()=>{let cur=0;sections.forEach((id,i)=>{const el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<=window.innerHeight/2)cur=i;});dots.forEach((d,i)=>d.classList.toggle('active',i===cur));});
+
+const tlObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:0.15});
+document.querySelectorAll('.tl-item').forEach(el=>tlObs.observe(el));
+
+let flamesOut=0;
+function handleCakeClick(e){const svg=e.currentTarget,rect=svg.getBoundingClientRect(),scaleX=280/rect.width,scaleY=260/rect.height,x=(e.clientX-rect.left)*scaleX,y=(e.clientY-rect.top)*scaleY;const candles=[{id:'flame1',cx:106,cy:56},{id:'flame2',cx:140,cy:48},{id:'flame3',cx:174,cy:56}];let hit=false;candles.forEach(c=>{const dx=x-c.cx,dy=y-c.cy;if(Math.sqrt(dx*dx+dy*dy)<22){const fl=document.getElementById(c.id);if(!fl.classList.contains('out')){fl.classList.add('out');flamesOut++;spawnBurst(e.clientX,e.clientY,'💨');hit=true;}}});if(!hit)spawnBurst(e.clientX,e.clientY,'✨');if(flamesOut===3){document.getElementById('blowHint').textContent='🎉 所有蜡烛都吹灭了！';document.getElementById('wishPopup').classList.add('show');createFW();createFW();}}
+function spawnBurst(x,y,emoji){const el=document.createElement('div');el.className='burst';el.textContent=emoji;el.style.cssText=`left:${x}px;top:${y}px;`;document.body.appendChild(el);setTimeout(()=>el.remove(),700);}
+
+const PUZZLE_IMG='https://i.ibb.co/wFVkZ1G0/pintu.jpg';
+let puzzleOrder=[],puzzleSelected=-1,puzzleMoves=0,puzzleSolved=false;
+const GRID=3,TOTAL=9;
+function initPuzzle(){puzzleOrder=Array.from({length:TOTAL},(_,i)=>i);puzzleMoves=0;puzzleSolved=false;shufflePuzzle();document.getElementById('puzzleWin').classList.remove('show');}
+function shufflePuzzle(){do{for(let i=TOTAL-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[puzzleOrder[i],puzzleOrder[j]]=[puzzleOrder[j],puzzleOrder[i]];}}while(puzzleOrder.every((v,i)=>v===i));puzzleSelected=-1;puzzleMoves=0;renderPuzzle();document.getElementById('puzzleWin').classList.remove('show');}
+function solvePuzzle(){puzzleOrder=Array.from({length:TOTAL},(_,i)=>i);puzzleSelected=-1;renderPuzzle();}
+function renderPuzzle(){const board=document.getElementById('puzzleBoard');board.innerHTML='';puzzleOrder.forEach((piece,pos)=>{const div=document.createElement('div');div.className='puzzle-piece'+(pos===puzzleSelected?' selected':'');div.style.cssText=`background-image:url(${PUZZLE_IMG});background-size:300% 300%;background-position:${(piece%GRID)*50}% ${Math.floor(piece/GRID)*50}%;`;div.onclick=()=>selectPiece(pos);board.appendChild(div);});document.getElementById('puzzleInfo').textContent=`移动次数：${puzzleMoves} 步`;}
+function selectPiece(pos){if(puzzleSelected===-1){puzzleSelected=pos;}else{if(puzzleSelected!==pos){[puzzleOrder[puzzleSelected],puzzleOrder[pos]]=[puzzleOrder[pos],puzzleOrder[puzzleSelected]];puzzleMoves++;}puzzleSelected=-1;renderPuzzle();checkPuzzleWin();}}
+function checkPuzzleWin(){if(puzzleOrder.every((v,i)=>v===i)&&!puzzleSolved){puzzleSolved=true;document.getElementById('puzzleWin').classList.add('show');document.getElementById('envelopeWrap').classList.remove('locked');document.getElementById('lockHint').style.display='none';document.getElementById('envHint').textContent='💛 点击打开信封';createFW();createFW();setTimeout(()=>document.getElementById('letter-section').scrollIntoView({behavior:'smooth'}),1400);}}
+window.addEventListener('load',()=>initPuzzle());
+
+let letterOpened=false;
+function openLetter(){const wrap=document.getElementById('envelopeWrap');if(wrap.classList.contains('locked')){wrap.style.animation='shake 0.4s ease';setTimeout(()=>wrap.style.animation='',400);return;}if(letterOpened)return;letterOpened=true;document.getElementById('flapShape').setAttribute('d','M5 30 L130 5 L255 30 Z');document.getElementById('waxSeal').setAttribute('r','0');document.getElementById('envHint').textContent='💌 已打开';setTimeout(()=>document.getElementById('letterContent').classList.add('show'),500);spawnBurst(window.innerWidth/2,window.innerHeight/2,'💌');}
+
+const balloonData=[
+  {type:'red',img:'https://i.ibb.co/XrgWHvpx/10.jpg',desc:'天啊，好开心，这是真的嘛'},
+  {type:'red',img:'https://i.ibb.co/TfkxDFg/2.jpg',desc:'小王最喜欢的作品之一，真的绝美'},
+  {type:'red',img:'https://i.ibb.co/FksxQ9Mz/1.jpg',desc:'小鱼守护小王的胃，幸福'},
+  {type:'red',img:'https://i.ibb.co/tp9tmzZR/3.jpg',desc:'蓝天白云绿树，见证小鱼小王的爱情'},
+  {type:'red',img:'https://i.ibb.co/1GjKxkWD/4.jpg',desc:'小鱼说，小王拍得最好的一张。嘻嘻~'},
+  {type:'red',img:'https://i.ibb.co/JWkv7ZQ9/5.jpg',desc:'小鱼妹妹鼓励小王溜冰'},
+  {type:'red',img:'https://i.ibb.co/G3QB380m/6.jpg',desc:'谢谢你小鱼，来自三亚海边的思念'},
+  {type:'red',img:'https://i.ibb.co/c4tGNm5/7.jpg',desc:'小鱼说小王的笑容变得生动啦，嘻嘻嘻'},
+  {type:'red',img:'https://i.ibb.co/2YyhMwfP/8.jpg',desc:'小王努力拼的桌子，累但是干劲十足！小鱼妹妹要回来了~'},
+  {type:'red',img:'https://i.ibb.co/tMMZp5HR/11.jpg',desc:'小鱼笑得多么好看。最喜欢的一张之一'},
+  {type:'red',img:'https://i.ibb.co/9kVVbQZp/12.jpg',desc:'小鱼妹妹喜欢的一张，小王的眼睛也在笑'},
+  {type:'red',img:'https://i.ibb.co/6Rv8m20b/13.jpg',desc:'灯下的两人，好甜的背影啊'},
+  {type:'pink',text:'愿你每天睁开眼睛\n都是好天气 ☀️'},
+  {type:'pink',text:'愿你想吃的都好吃\n想买的都不贵 🛍️'},
+  {type:'pink',text:'愿你走到哪里\n都被温柔对待 🌸'},
+  {type:'pink',text:'愿你永远有人疼\n有人爱，有人陪 💕'},
+  {type:'pink',text:'生日快乐，小鱼\n新的一岁，万事胜意 🎂'},
+];
+const goldWish='小鱼，\n谢谢你出现在我的生命里。\n\n从相识到现在，每一天都是礼物。\n\n愿我们的故事，\n还有很长很长。\n\n❤️ 生日快乐，我的小鱼。';
+
+let balloons=[],balloonAnimId=null,popCount=0,gameStarted=false,goldAppeared=false;
+const bCanvas=document.getElementById('balloonCanvas'),bCtx=bCanvas.getContext('2d');
+function resizeBC(){bCanvas.width=bCanvas.offsetWidth;}
+resizeBC();window.addEventListener('resize',resizeBC);
+
+function startBalloonGame(){if(balloonAnimId)cancelAnimationFrame(balloonAnimId);balloons=[];popCount=0;gameStarted=true;goldAppeared=false;resizeBC();const W=bCanvas.width,H=bCanvas.height;document.getElementById('popCount').textContent=0;document.getElementById('totalCount').textContent=balloonData.length+1;const mixed=[...balloonData];for(let i=mixed.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[mixed[i],mixed[j]]=[mixed[j],mixed[i]];}mixed.forEach((data,i)=>{balloons.push({...data,x:50+Math.random()*(W-100),y:H+80+i*70,r:data.type==='pink'?30:28+Math.random()*8,vy:-(0.45+Math.random()*0.55),vx:(Math.random()-0.5)*0.8,wobble:Math.random()*Math.PI*2,wobbleSpeed:0.022+Math.random()*0.02,popped:false,popAnim:0});});animateBalloons();}
+
+function animateBalloons(){const W=bCanvas.width,H=bCanvas.height;bCtx.clearRect(0,0,W,H);const nonGold=balloons.filter(b=>b.type!=='gold');if(nonGold.length>0&&nonGold.every(b=>b.popped)&&!goldAppeared){goldAppeared=true;balloons.push({type:'gold',text:goldWish,x:W/2,y:H+80,r:44,vy:-0.5,vx:0,wobble:0,wobbleSpeed:0.012,popped:false,popAnim:0});}
+balloons.forEach(b=>{if(b.popped){b.popAnim+=0.07;if(b.popAnim<1.2){bCtx.globalAlpha=Math.max(0,1-b.popAnim);bCtx.font=`${b.r*(1+b.popAnim)}px serif`;bCtx.textAlign='center';bCtx.textBaseline='middle';bCtx.fillText('💥',b.x,b.y);bCtx.globalAlpha=1;}return;}
+b.wobble+=b.wobbleSpeed;const sm=b.type==='gold'?1.3:1;b.x+=b.vx+Math.sin(b.wobble)*0.5;b.y+=b.vy*sm;if(b.x<b.r){b.x=b.r;b.vx=Math.abs(b.vx);}if(b.x>W-b.r){b.x=W-b.r;b.vx=-Math.abs(b.vx);}if(b.y<-b.r*2.5){b.y=H+b.r;b.x=50+Math.random()*(W-100);}
+const grad=bCtx.createRadialGradient(b.x-b.r*0.3,b.y-b.r*0.35,b.r*0.05,b.x,b.y,b.r);if(b.type==='red'){grad.addColorStop(0,'#ff7070');grad.addColorStop(0.6,'#c0392b');grad.addColorStop(1,'#7b1a1a');}else if(b.type==='pink'){grad.addColorStop(0,'#ffcce8');grad.addColorStop(0.6,'#ff69b4');grad.addColorStop(1,'#ad1457');}else{grad.addColorStop(0,'#fffde7');grad.addColorStop(0.5,'#f0c040');grad.addColorStop(1,'#e65100');}
+bCtx.beginPath();bCtx.ellipse(b.x,b.y,b.r,b.r*1.25,0,0,Math.PI*2);bCtx.fillStyle=grad;bCtx.fill();
+bCtx.beginPath();bCtx.ellipse(b.x-b.r*0.28,b.y-b.r*0.38,b.r*0.18,b.r*0.13,Math.PI/4,0,Math.PI*2);bCtx.fillStyle='rgba(255,255,255,0.5)';bCtx.fill();
+bCtx.beginPath();bCtx.moveTo(b.x,b.y+b.r*1.25);bCtx.quadraticCurveTo(b.x+10,b.y+b.r*1.8,b.x,b.y+b.r*2.5);bCtx.strokeStyle=b.type==='gold'?'#f0c040':b.type==='pink'?'#ff69b4':'#c0392b';bCtx.lineWidth=1.5;bCtx.stroke();
+bCtx.font=`${b.r*0.62}px serif`;bCtx.textAlign='center';bCtx.textBaseline='middle';bCtx.fillText(b.type==='gold'?'🥇':b.type==='pink'?'💕':'📸',b.x,b.y);
+if(b.type==='gold'){bCtx.beginPath();bCtx.arc(b.x,b.y,b.r+10,0,Math.PI*2);bCtx.strokeStyle=`rgba(240,192,64,${0.25+Math.sin(b.wobble*3)*0.2})`;bCtx.lineWidth=4;bCtx.stroke();}});
+balloonAnimId=requestAnimationFrame(animateBalloons);}
+
+function getPos(e,canvas){const rect=canvas.getBoundingClientRect(),sx=canvas.width/rect.width,sy=canvas.height/rect.height;if(e.touches)return{x:(e.touches[0].clientX-rect.left)*sx,y:(e.touches[0].clientY-rect.top)*sy};return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sy};}
+function handlePop(e){if(!gameStarted)return;e.preventDefault();const pos=getPos(e,bCanvas);for(let i=balloons.length-1;i>=0;i--){const b=balloons[i];if(b.popped)continue;const dx=pos.x-b.x,dy=pos.y-b.y;if(Math.sqrt(dx*dx+dy*dy)<b.r*1.2){b.popped=true;popCount++;document.getElementById('popCount').textContent=popCount;showBalloonModal(b);const cx=e.touches?e.touches[0].clientX:e.clientX,cy=e.touches?e.touches[0].clientY:e.clientY;spawnBurst(cx,cy,'💥');if(b.type==='gold'){createFW();createFW();createFW();}break;}}}
+bCanvas.addEventListener('click',handlePop);
+bCanvas.addEventListener('touchstart',handlePop,{passive:false});
+
+function showBalloonModal(b){const modal=document.getElementById('balloonModal'),img=document.getElementById('bmImg');if(b.type==='red'){document.getElementById('bmTitle').textContent='📸 我们的回忆';img.src=b.img;img.style.display='block';document.getElementById('bmText').textContent=b.desc;}else if(b.type==='pink'){document.getElementById('bmTitle').textContent='💕 生日祝福';img.style.display='none';document.getElementById('bmText').textContent=b.text;}else{document.getElementById('bmTitle').textContent='🥇 最后的惊喜';img.style.display='none';document.getElementById('bmText').textContent=b.text;}modal.classList.add('show');}
+</script>
+</body>
+</html>
